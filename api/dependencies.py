@@ -1,7 +1,5 @@
 """Loads the trained model, feature order, and SHAP explainer ONCE when the
-API process starts, not on every request. Building a SHAP explainer isn't
-free -- there's no reason to redo it on every call to /predict when none
-of these artifacts change while the server is running.
+API process starts, not on every request.
 """
 import json
 import sys
