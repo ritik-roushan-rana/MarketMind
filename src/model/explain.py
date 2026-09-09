@@ -29,8 +29,17 @@ LABEL_NAMES = {0: "flat", 1: "up", 2: "down"}
 def build_explainer(model):
     """TreeExplainer works directly on the underlying XGBoost booster --
     fast, exact (not a sampling approximation), no background dataset
-    needed for tree models."""
-    return shap.TreeExplainer(model)
+    needed for tree models.
+
+    Pass the raw booster via get_booster() rather than the sklearn wrapper.
+    Some SHAP versions fail to parse the multiclass base_score stored as
+    '[5E-1,5E-1,5E-1]' from the wrapper's metadata -- the booster object
+    bypasses that code path entirely.
+    """
+    try:
+        return shap.TreeExplainer(model.get_booster())
+    except Exception:
+        return shap.TreeExplainer(model)
 
 
 def _class_shap(shap_values, predicted_class: int, row_idx: int = 0):
