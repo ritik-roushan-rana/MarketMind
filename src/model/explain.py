@@ -26,20 +26,41 @@ import config
 LABEL_NAMES = {0: "flat", 1: "up", 2: "down"}
 
 
-def build_explainer(model):
-    """TreeExplainer works directly on the underlying XGBoost booster --
-    fast, exact (not a sampling approximation), no background dataset
-    needed for tree models.
-
-    Pass the raw booster via get_booster() rather than the sklearn wrapper.
-    Some SHAP versions fail to parse the multiclass base_score stored as
-    '[5E-1,5E-1,5E-1]' from the wrapper's metadata -- the booster object
-    bypasses that code path entirely.
+def _fix_booster_base_score(booster):
+    """SHAP >=0.46 tries to float() the XGBoost multiclass base_score, but
+    XGBoost 2.x stores it as '[5E-1,5E-1,5E-1]' (one value per class).
+    SHAP chokes on the brackets.  Fix: load the booster config JSON, rewrite
+    base_score to a plain scalar, and save it back before SHAP reads it.
+    This is the only reliable fix that works across all SHAP versions.
     """
-    try:
-        return shap.TreeExplainer(model.get_booster())
-    except Exception:
-        return shap.TreeExplainer(model)
+    import json, re
+    cfg = json.loads(booster.save_config())
+
+    def _fix_node(node):
+        if isinstance(node, dict):
+            for k, v in node.items():
+                if k == "base_score" and isinstance(v, str) and v.startswith("["):
+                    # '[5E-1,5E-1,5E-1]' -> take first value -> 0.5
+                    nums = re.findall(r"[0-9Ee.+\-]+", v)
+                    node[k] = str(float(nums[0])) if nums else "0.5"
+                else:
+                    _fix_node(v)
+        elif isinstance(node, list):
+            for item in node:
+                _fix_node(item)
+
+    _fix_node(cfg)
+    booster.load_config(json.dumps(cfg))
+    return booster
+
+
+def build_explainer(model):
+    """Build a TreeExplainer, working around the SHAP >=0.46 bug where it
+    cannot parse the multiclass base_score array '[5E-1,5E-1,5E-1]' stored
+    by XGBoost 2.x.  We fix the booster config in-place before SHAP reads it.
+    """
+    booster = _fix_booster_base_score(model.get_booster())
+    return shap.TreeExplainer(booster)
 
 
 def _class_shap(shap_values, predicted_class: int, row_idx: int = 0):
