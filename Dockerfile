@@ -1,6 +1,5 @@
 # ─────────────────────────────────────────────────────────────────────────────
 # Stage 1: builder
-# bookworm = Debian 12 (current stable, fully supported apt repos)
 # ─────────────────────────────────────────────────────────────────────────────
 FROM python:3.11-slim-bookworm AS builder
 
@@ -13,10 +12,16 @@ WORKDIR /install
 
 COPY requirements.txt .
 
-# CPU-only torch — no CUDA wheel (saves ~1.5 GB)
+# Install order matters:
+#   1. numpy<2  — torch & shap were compiled against NumPy 1.x API.
+#                 NumPy 2.x breaks them at runtime.
+#   2. torch    — CPU-only wheel (~800 MB saved vs CUDA build).
+#                 2.5.1 satisfies transformers>=4.40 requirement (needs >=2.5).
+#   3. rest     — everything else in requirements.txt after torch is in place.
 RUN pip install --upgrade pip --no-cache-dir && \
+    pip install --no-cache-dir "numpy>=1.24,<2.0" && \
     pip install --no-cache-dir \
-        torch==2.2.2 \
+        "torch==2.5.1" \
         --index-url https://download.pytorch.org/whl/cpu && \
     pip install --no-cache-dir -r requirements.txt
 
@@ -34,10 +39,10 @@ COPY --from=builder /usr/local/bin /usr/local/bin
 
 WORKDIR /app
 
-COPY api/          ./api/
-COPY src/          ./src/
-COPY config.py     ./config.py
-COPY models/       ./models/
+COPY api/           ./api/
+COPY src/           ./src/
+COPY config.py      ./config.py
+COPY models/        ./models/
 COPY data/raw/live/ ./data/raw/live/
 
 ENV PORT=8000
