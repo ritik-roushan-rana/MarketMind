@@ -1,0 +1,42 @@
+# Secrets — never commit
+.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtual environment
+.venv/
+venv/
+env/
+
+# Data — training artifacts, too large for git
+data/raw/news/
+data/raw/prices/
+data/interim/
+data/processed/
+
+# Keep the demo-day live snapshots (they're tiny and the fallback needs them)
+!data/raw/live/
+
+# macOS
+.DS_Store
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# Node (frontend)
+frontend-react/node_modules/
+frontend/  
+
+# IDE
+.vscode/
+.idea/

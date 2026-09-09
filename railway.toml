@@ -1,0 +1,17 @@
+[build]
+# Use the Dockerfile in the repo root — Railway auto-detects it,
+# but being explicit prevents surprises if you add a frontend folder later.
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+# Railway passes $PORT automatically; uvicorn reads it in CMD.
+# healthcheckPath tells Railway which URL to poll after deploy to decide
+# if the container is healthy before switching traffic.
+healthcheckPath = "/health"
+healthcheckTimeout = 120     # seconds — generous because SHAP + torch cold start
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3
+
+# Keep-alive: Railway will restart the service if it crashes,
+# but won't scale to zero on the Starter plan.

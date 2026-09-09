@@ -1,0 +1,81 @@
+{
+  "ablation_summary_raw": {
+    "balanced_accuracy": {
+      "technicals_only": 0.368574207061551,
+      "technicals_plus_sentiment": 0.3665893039750043
+    },
+    "macro_f1": {
+      "technicals_only": 0.36171028207683986,
+      "technicals_plus_sentiment": 0.35829597862381624
+    },
+    "baseline_balanced_accuracy": {
+      "technicals_only": 0.3333333333333333,
+      "technicals_plus_sentiment": 0.3333333333333333
+    },
+    "return_spread": {
+      "technicals_only": 0.003937783218177284,
+      "technicals_plus_sentiment": 0.0036165002409927144
+    }
+  },
+  "target_comparison": {
+    "balanced_accuracy": {
+      "excess_target": 0.36628181821832617,
+      "raw_target": 0.3665893039750043
+    },
+    "macro_f1": {
+      "excess_target": 0.33007959731215086,
+      "raw_target": 0.35829597862381624
+    },
+    "return_spread": {
+      "excess_target": 0.002148894849411,
+      "raw_target": 0.0036165002409927144
+    }
+  },
+  "ablation_summary_excess": {
+    "balanced_accuracy": {
+      "technicals_only_excess": 0.35559098447317466,
+      "technicals_plus_sentiment_excess": 0.36628181821832617
+    },
+    "macro_f1": {
+      "technicals_only_excess": 0.3127705625825061,
+      "technicals_plus_sentiment_excess": 0.33007959731215086
+    },
+    "return_spread": {
+      "technicals_only_excess": 3.793666035481686e-05,
+      "technicals_plus_sentiment_excess": 0.002148894849411
+    }
+  },
+  "sentiment_delta_balanced_accuracy_raw": -0.0019849030865466966,
+  "sentiment_delta_balanced_accuracy_excess": 0.010690833745151507,
+  "n_trainable_rows": 3630,
+  "n_estimators_final": 53,
+  "final_model_label_col": "label_excess",
+  "feature_cols": [
+    "ret_1d",
+    "ret_3d",
+    "ret_5d",
+    "ret_10d",
+    "vol_5d",
+    "vol_20d",
+    "rsi_14",
+    "macd_hist",
+    "atr_ratio",
+    "volume_ratio",
+    "sma20_dist",
+    "sma50_dist",
+    "sentiment_mean_1d",
+    "sentiment_mean_3d",
+    "sentiment_mean_7d",
+    "news_count_1d",
+    "news_count_3d",
+    "news_count_7d",
+    "negativity_share_7d",
+    "news_count_zscore",
+    "sentiment_ema_3d",
+    "sentiment_momentum",
+    "spy_ret_1d",
+    "vix_level",
+    "vix_change_1d",
+    "day_of_week"
+  ]
+}
