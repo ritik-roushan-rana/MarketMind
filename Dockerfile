@@ -1,5 +1,6 @@
 # ─────────────────────────────────────────────────────────────────────────────
 # Stage 1: builder
+# CACHE_BUST: 3 — bump this number to force Railway to rebuild from scratch
 # ─────────────────────────────────────────────────────────────────────────────
 FROM python:3.11-slim-bookworm AS builder
 
