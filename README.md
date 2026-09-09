@@ -4,6 +4,185 @@ Next-day directional prediction for 15 large-cap equities, powered by XGBoost + 
 
 ---
 
+## 🚀 Deployment (Railway + Vercel)
+
+Everything is pre-configured. Two services, ~15 minutes total.
+
+### Prerequisites
+
+- GitHub account (free)
+- [Railway](https://railway.app) account — sign up with GitHub, free Starter tier is enough
+- [Vercel](https://vercel.com) account — sign up with GitHub, free Hobby tier is enough
+- Your `FINNHUB_API_KEY` and `GEMINI_API_KEY` ready
+
+---
+
+### Step 1 — Push to GitHub
+
+```bash
+# From the market-sentiment/ project root:
+git remote add origin https://github.com/YOUR_USERNAME/market-sentiment.git
+git push -u origin main
+```
+
+> Replace `YOUR_USERNAME` with your actual GitHub username. Create the repo
+> on github.com first (click **New**, name it `market-sentiment`, leave it
+> empty — no README, no .gitignore). Then run the two commands above.
+
+---
+
+### Step 2 — Deploy the backend to Railway
+
+**2a. Create a new project**
+
+1. Go to [railway.app/new](https://railway.app/new)
+2. Click **Deploy from GitHub repo**
+3. Authorise Railway to access your repos if asked
+4. Select **market-sentiment**
+5. Railway detects the `Dockerfile` automatically — click **Deploy**
+
+**2b. Add your secret environment variables**
+
+While the first build is running (it takes 5–8 minutes — torch is large):
+
+1. Click your service → **Variables** tab
+2. Add these two variables:
+
+   | Name | Value |
+   |------|-------|
+   | `FINNHUB_API_KEY` | your key from finnhub.io |
+   | `GEMINI_API_KEY` | your key from aistudio.google.com |
+
+3. Railway automatically redeploys when you save variables — the second deploy will be from cache and much faster.
+
+**2c. Get your backend URL**
+
+1. Click **Settings** → **Networking** → **Generate Domain**
+2. Railway gives you a URL like `https://market-sentiment-production.up.railway.app`
+3. Copy it — you need it in Step 3
+
+**2d. Verify the backend is live**
+
+Open in your browser:
+```
+https://YOUR_RAILWAY_URL/health
+```
+You should see:
+```json
+{"status":"ok","model_loaded":true,"n_features":26,"tickers_available":15}
+```
+
+> **If the health check fails:** check the **Deploy Logs** tab in Railway.
+> The most common issue is a missing API key — the build succeeds but the
+> server errors on first request.
+
+---
+
+### Step 3 — Deploy the frontend to Vercel
+
+**3a. Import the project**
+
+1. Go to [vercel.com/new](https://vercel.com/new)
+2. Click **Import Git Repository** → select **market-sentiment**
+3. Vercel scans the repo — it will find multiple directories. Set:
+   - **Root Directory:** `frontend-react`
+   - Framework preset auto-detects as **Vite** ✓
+
+**3b. Add the environment variable**
+
+Before clicking Deploy, scroll to **Environment Variables** and add:
+
+| Name | Value |
+|------|-------|
+| `VITE_API_BASE` | `https://YOUR_RAILWAY_URL` (no trailing slash) |
+
+Example: `https://market-sentiment-production.up.railway.app`
+
+**3c. Deploy**
+
+Click **Deploy**. Vercel builds in ~30 seconds and gives you a URL like:
+```
+https://market-sentiment.vercel.app
+```
+
+**3d. Verify end-to-end**
+
+Open the Vercel URL in your browser, select any ticker, and confirm a
+prediction loads. That's it — you're live.
+
+---
+
+### Environment variable summary
+
+| Service | Variable | Where to set |
+|---------|----------|--------------|
+| Railway (backend) | `FINNHUB_API_KEY` | Railway → Variables tab |
+| Railway (backend) | `GEMINI_API_KEY` | Railway → Variables tab |
+| Vercel (frontend) | `VITE_API_BASE` | Vercel → Project Settings → Environment Variables |
+
+`VITE_API_BASE` must be set **before** the Vercel build runs (not after),
+because Vite bakes it into the static bundle at build time.
+
+---
+
+### Redeploying after changes
+
+```bash
+# Make your changes, then:
+git add -A
+git commit -m "your message"
+git push
+```
+
+Both Railway and Vercel watch the `main` branch and redeploy automatically.
+
+---
+
+### Demo-day checklist (morning of the presentation)
+
+Run these locally before you leave to refresh the fallback snapshots —
+they're small parquet files already in the repo, but fresher is better:
+
+```bash
+source .venv/bin/activate
+python scripts/03_snapshot_live.py    # refreshes news fallback
+python scripts/04_snapshot_live_prices.py  # refreshes price fallback
+git add data/raw/live/
+git commit -m "chore: refresh demo-day live snapshots"
+git push
+```
+
+Railway picks up the new snapshots and redeploys. If the venue wifi dies
+mid-demo, the API falls back to these files automatically and shows a
+small "Using cached data" badge in the UI — no crash, no blank screen.
+
+---
+
+### Troubleshooting
+
+**Backend build times out on Railway (> 15 min)**
+The first build pulls PyTorch (~800 MB CPU wheel). Railway's free tier has
+a 15-minute build limit — if it hits it, retry once. Docker layer caching
+means the second attempt skips the torch download entirely and finishes in
+under 3 minutes.
+
+**`/predict` returns 500 after deploy**
+Check Railway logs. 95% of the time it's `GEMINI_API_KEY` not set or
+set with a typo. The other 5% is `FINNHUB_API_KEY`.
+
+**Frontend shows "Cannot reach API" error**
+`VITE_API_BASE` is missing or has a trailing slash. Go to Vercel →
+Project Settings → Environment Variables, fix it, then trigger a redeploy
+(Deployments → ⋯ → Redeploy).
+
+**Cold start takes 30+ seconds on first `/predict` call**
+Normal — Railway's Starter tier keeps the process warm but the first
+request after a fresh deploy loads torch + SHAP + the model. Subsequent
+calls within 5 minutes are fast (cached). Show a loading state in the demo
+and warn your audience about the first call.
+
+---
+
 ## Quick start (backend)
 
 ```bash
