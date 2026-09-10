@@ -11,9 +11,12 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-import torch
 from tqdm import tqdm
-from transformers import AutoModelForSequenceClassification, AutoTokenizer
+
+# torch and transformers are imported lazily inside _load_model(). Importing
+# torch alone costs a few hundred MB of RSS, and on a 1GB container that is
+# memory the API cannot spare for a request it can serve entirely from the
+# precomputed sentiment cache.
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 import config
@@ -25,6 +28,8 @@ _DEVICE = None
 
 
 def _get_device() -> str:
+    import torch
+
     if torch.backends.mps.is_available():
         return "mps"
     if torch.cuda.is_available():
@@ -38,6 +43,9 @@ def _load_model():
     global _MODEL, _TOKENIZER, _DEVICE
     if _MODEL is not None:
         return _TOKENIZER, _MODEL, _DEVICE
+
+    import torch
+    from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
     _DEVICE = _get_device()
     print(f"  loading {config.FINBERT_MODEL} on {_DEVICE} ...")
@@ -78,6 +86,8 @@ def score_texts(texts: list) -> pd.DataFrame:
     """
     if not texts:
         return pd.DataFrame(columns=["sent_positive", "sent_negative", "sent_neutral"])
+
+    import torch
 
     tokenizer, model, device = _load_model()
     id2label = {i: lbl.lower() for i, lbl in model.config.id2label.items()}

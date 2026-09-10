@@ -21,6 +21,10 @@ env/
 data/raw/news/
 data/raw/prices/
 data/interim/
+# ...except the sentiment cache, which the Docker image ships so the API
+# never has to score a cold cache with FinBERT on a 1GB container.
+!data/interim/
+!data/interim/sentiment_cache.parquet
 data/processed/
 
 # Keep the demo-day live snapshots (they're tiny and the fallback needs them)

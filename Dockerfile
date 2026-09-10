@@ -42,6 +42,12 @@ COPY models/ ./models/
 
 COPY data/raw/live/ ./data/raw/live/
 
+# Ship the precomputed sentiment cache. Without it the container starts with
+# an empty cache and the first /predict tries to score the entire recent news
+# window (246 articles) with FinBERT, which OOM-kills a 1GB instance. With it,
+# only genuinely new articles need scoring -- a handful, not hundreds.
+COPY data/interim/sentiment_cache.parquet ./data/interim/sentiment_cache.parquet
+
 # No ENV PORT here on purpose. Railway injects its own $PORT and overrides
 # anything set at build time, so hardcoding one only creates a misleading
 # value to point a domain at. ${PORT:-8000} keeps `docker run` working
