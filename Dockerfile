@@ -15,7 +15,7 @@ COPY requirements.txt .
 RUN pip install --upgrade pip --no-cache-dir && \
     pip install --no-cache-dir "numpy>=1.24,<2.0" && \
     pip install --no-cache-dir \
-        "torch==2.5.1" \
+        "torch==2.6.0" \
         --index-url https://download.pytorch.org/whl/cpu && \
     pip install --no-cache-dir -r requirements.txt
 
