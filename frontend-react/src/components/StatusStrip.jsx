@@ -11,9 +11,9 @@ export default function StatusStrip({ ticker, usingCache, onRefresh, isRefreshin
           <span>SYSTEM LIVE</span>
         </span>
         <span className="hidden sm:inline text-outline">•</span>
-        <span className="hidden sm:inline">ENG: HYBRID-TRANSFORMER-V4.2</span>
+        <span className="hidden sm:inline">ENG: XGBOOST + FINBERT</span>
         <span className="hidden md:inline text-outline">•</span>
-        <span className="hidden md:inline">INFERENCE: 26.4ms</span>
+        <span className="hidden md:inline">XAI: TREESHAP</span>
       </div>
       <div className="flex items-center gap-space-sm">
         <div className="inline-flex items-center gap-1.5 px-space-sm py-0.5 rounded bg-surface-container border border-outline-variant/50 font-label-mono text-label-mono text-tertiary">

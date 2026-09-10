@@ -58,7 +58,7 @@ export default function Header({ activeTicker, onSelect, usingCache }) {
           </div>
           <div className="hidden md:flex items-center gap-space-xs px-space-sm py-space-2xs bg-surface-container rounded border border-outline-variant/40">
             <span className="w-1.5 h-1.5 rounded-full bg-tertiary animate-pulse" />
-            <span className="font-label-mono text-label-mono text-tertiary uppercase tracking-wider">Model v2.4-Quant</span>
+            <span className="font-label-mono text-label-mono text-tertiary uppercase tracking-wider">XGBoost + FinBERT</span>
           </div>
         </div>
 

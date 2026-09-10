@@ -155,7 +155,7 @@ export default function LlmFallback({ data, onSelect, onRefresh, isRefreshing })
                 <span className="font-label-mono text-label-mono text-outline">BASELINE E(y) = 0.33</span>
               </div>
               <p className="font-body-sm text-body-sm text-on-surface-variant">
-                Quantitative feature attribution decomposed across global technicals and order books.
+                Feature attribution decomposed across price technicals and news sentiment.
               </p>
               <ShapBars drivers={top_drivers} />
             </div>

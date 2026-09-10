@@ -166,8 +166,8 @@ export default function PredictionView({ data, onSelect, onRefresh, isRefreshing
               <div className="flex flex-col gap-space-md pt-space-md">
                 <ShapBars drivers={top_drivers} />
                 <div className="mt-space-md pt-space-xs border-t border-outline-variant/20 flex items-center justify-between font-label-mono text-label-mono text-outline">
-                  <span>KernelSHAP: 2,048 background evaluations</span>
-                  <span className="text-on-surface-variant">TreeExplainer Converged</span>
+                  <span>TreeSHAP: exact attributions, no sampling</span>
+                  <span className="text-on-surface-variant">XGBoost pred_contribs</span>
                 </div>
               </div>
             )}
