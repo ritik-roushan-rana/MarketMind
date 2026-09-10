@@ -4,6 +4,29 @@ Next-day directional prediction for 15 large-cap equities, powered by XGBoost + 
 
 ---
 
+![Market Sentiment Dashboard](docs/dashboard.png)
+
+> Live prediction for BAC -- a weak upward lean (38% / 30% / 33%), the headlines
+> it was read from, and the exact TreeSHAP contribution behind every driver.
+
+## What you're looking at
+
+Pick a ticker and the dashboard answers one question -- *where does this stock go
+tomorrow, and why?*
+
+- **Distribution matrix** -- a 3-way probability split (up / flat / down) against a
+  33.3% baseline, so a weak signal reads as weak instead of hiding behind a single
+  headline number.
+- **Rationale synthesis** -- a plain-English summary from Gemini, written *only*
+  from the SHAP attributions and the fetched headlines. It has no freedom to
+  invent a story the model didn't tell.
+- **Corpus telemetry** -- the actual articles scored by FinBERT for that ticker in
+  the last 24h, so every claim in the summary is traceable to a source.
+- **Explainable AI (XAI)** -- per-feature TreeSHAP attributions for *this*
+  prediction, signed and sorted: what dragged the forecast down, what pushed it up.
+
+---
+
 ## 🚀 Deployment (Railway + Vercel)
 
 Everything is pre-configured. Two services, ~15 minutes total.
