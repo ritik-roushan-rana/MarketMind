@@ -79,7 +79,11 @@ def predict_ticker(ticker: str, model, feature_cols: list, explainer) -> dict:
     pred_class = int(proba.argmax())
 
     class_probabilities = {LABEL_NAMES[i]: float(p) for i, p in enumerate(proba)}
-    contrib = explain_row(explainer, row, feature_cols, pred_class)
+    if explainer is not None:
+        contrib = explain_row(explainer, row, feature_cols, pred_class)
+    else:
+        # explainer failed to build at startup -- serve the prediction anyway
+        contrib = pd.DataFrame(columns=["feature", "value", "shap"])
 
     recent_headlines = []
     if not news.empty:

@@ -38,39 +38,7 @@ COPY api/       ./api/
 COPY src/       ./src/
 COPY config.py  ./config.py
 
-# Copy models LAST and with an inline fix script so the base_score is
-# always corrected at build time — regardless of what's in the cached layer.
-# This also means any change to models/ triggers a fresh COPY.
 COPY models/ ./models/
-
-# Fix model.json base_score in-place at build time so SHAP never sees the
-# array format '[5E-1,5E-1,5E-1]' that it cannot parse.
-RUN python - <<'PYEOF'
-import json, re, pathlib, sys
-
-model_path = pathlib.Path("/app/models/model.json")
-if not model_path.exists():
-    print("model.json not found, skipping fix")
-    sys.exit(0)
-
-data = json.loads(model_path.read_text())
-
-def fix(node):
-    if isinstance(node, dict):
-        for k, v in node.items():
-            if k == "base_score" and isinstance(v, str) and v.startswith("["):
-                nums = re.findall(r"[0-9Ee.+\-]+", v)
-                node[k] = str(float(nums[0])) if nums else "0.5"
-                print(f"Fixed base_score: {v!r} -> {node[k]!r}")
-            else:
-                fix(v)
-    elif isinstance(node, list):
-        for item in node: fix(item)
-
-fix(data)
-model_path.write_text(json.dumps(data))
-print("model.json patched OK")
-PYEOF
 
 COPY data/raw/live/ ./data/raw/live/
 

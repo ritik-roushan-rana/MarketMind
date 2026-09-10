@@ -3,6 +3,7 @@ API process starts, not on every request.
 """
 import json
 import sys
+import traceback
 from pathlib import Path
 
 from xgboost import XGBClassifier
@@ -20,7 +21,13 @@ with open(config.FEATURE_ORDER_PATH) as f:
     _feature_order = json.load(f)
 
 print("[startup] building SHAP explainer...")
-_explainer = build_explainer(_model)
+try:
+    _explainer = build_explainer(_model)
+except Exception as exc:  # explanations are optional -- the API still serves
+    traceback.print_exc()
+    print(f"[startup] WARNING: explainer unavailable ({exc.__class__.__name__}); "
+          f"predictions will be served without SHAP drivers")
+    _explainer = None
 
 print(f"[startup] ready -- {len(_feature_order)} features, "
       f"{len(config.TICKERS)} tickers available")

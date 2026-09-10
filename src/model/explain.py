@@ -4,23 +4,20 @@ Turns "the model predicts UP" into "the model predicts UP mainly because
 of X, Y, Z" -- grounding the LLM explainer in actual feature attributions
 instead of letting it free-associate about why a stock might move.
 
-Handles the shape shap.TreeExplainer actually returns for a multiclass
-XGBClassifier, which has changed across shap versions:
-  - some versions: a list of (n_rows, n_features) arrays, one per class
-  - current versions (tested on shap 0.52): a single
-    (n_rows, n_features, n_classes) array
-Both are handled so this doesn't silently break on a shap version bump.
+Attributions come from XGBoost's built-in TreeSHAP (``pred_contribs=True``)
+rather than the ``shap`` package, so the runtime has no dependency on shap's
+model parser -- see _NativeTreeExplainer for why that matters.  The shape
+handling below still tolerates the list-per-class layout in case an explainer
+that returns it is ever swapped back in.
 """
 from __future__ import annotations
 
-import json
-import re
 import sys
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
-import shap
+import xgboost
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 import config
@@ -28,39 +25,38 @@ import config
 LABEL_NAMES = {0: "flat", 1: "up", 2: "down"}
 
 
-def _fix_booster_base_score(booster):
-    """SHAP >=0.46 tries to float() the XGBoost multiclass base_score, but
-    XGBoost 2.x can store it as '[5E-1,5E-1,5E-1]' (one value per class).
-    SHAP chokes on the brackets.  Fix: rewrite base_score to a plain scalar
-    in the booster config JSON before SHAP reads it.
-    Works on every SHAP version since it never touches SHAP's code.
+class _NativeTreeExplainer:
+    """Drop-in replacement for shap.TreeExplainer backed by XGBoost's own
+    TreeSHAP implementation (``pred_contribs=True``).
+
+    Same algorithm, same numbers -- but it reads the booster directly instead
+    of round-tripping it through shap's XGBTreeModelLoader, which cannot parse
+    the per-class ``base_score`` vector ('[5E-1,5E-1,5E-1]') that XGBoost >=2.0
+    regenerates in memory for multi:softprob models.  Patching base_score on
+    disk or via load_config() does not help: shap re-serializes the live
+    booster with save_raw(), and the vector comes straight back.
     """
-    cfg = json.loads(booster.save_config())
 
-    def _fix_node(node):
-        if isinstance(node, dict):
-            for k, v in node.items():
-                if k == "base_score" and isinstance(v, str) and v.startswith("["):
-                    nums = re.findall(r"[0-9Ee.+\-]+", v)
-                    node[k] = str(float(nums[0])) if nums else "0.5"
-                else:
-                    _fix_node(v)
-        elif isinstance(node, list):
-            for item in node:
-                _fix_node(item)
+    def __init__(self, booster):
+        self._booster = booster
 
-    _fix_node(cfg)
-    booster.load_config(json.dumps(cfg))
-    return booster
+    def shap_values(self, X):
+        """Returns (n_rows, n_features, n_classes) for multiclass, or
+        (n_rows, n_features) for binary/regression -- matching the shapes
+        _class_shap() and global_importance() already handle."""
+        X = np.asarray(X, dtype=float)
+        contribs = self._booster.predict(xgboost.DMatrix(X), pred_contribs=True)
+
+        if contribs.ndim == 3:
+            # (n_rows, n_classes, n_features + 1) -> drop bias, move classes last
+            return np.transpose(contribs[:, :, :-1], (0, 2, 1))
+        return contribs[:, :-1]  # (n_rows, n_features + 1) -> drop bias
 
 
 def build_explainer(model):
-    """Build a TreeExplainer, working around the SHAP >=0.46 bug where it
-    cannot parse the multiclass base_score array '[5E-1,5E-1,5E-1]' stored
-    by some XGBoost 2.x builds.  We fix the booster config before SHAP reads it.
-    """
-    booster = _fix_booster_base_score(model.get_booster())
-    return shap.TreeExplainer(booster)
+    """Build a TreeSHAP explainer for a trained XGBoost model."""
+    booster = model.get_booster() if hasattr(model, "get_booster") else model
+    return _NativeTreeExplainer(booster)
 
 
 def _class_shap(shap_values, predicted_class: int, row_idx: int = 0):
