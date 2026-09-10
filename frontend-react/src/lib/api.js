@@ -1,6 +1,9 @@
 // VITE_API_BASE is set as an environment variable in Vercel's dashboard.
 // Locally it falls back to localhost:8000 so nothing breaks during dev.
-const API_BASE = import.meta.env.VITE_API_BASE ?? 'http://localhost:8000';
+// Trailing slashes are stripped: a VITE_API_BASE ending in '/' would build
+// URLs like https://host//tickers, and FastAPI 404s on the double slash.
+const API_BASE = (import.meta.env.VITE_API_BASE ?? 'http://localhost:8000')
+  .replace(/\/+$/, '');
 
 // Vite inlines env vars at BUILD time, so a production bundle missing
 // VITE_API_BASE ships the localhost fallback and every visitor's browser
