@@ -87,8 +87,23 @@ MIN_HEADLINE_CHARS = 20
 
 # ---------------------------------------------------------------- finbert
 FINBERT_MODEL = "ProsusAI/finbert"
-FINBERT_BATCH_SIZE = 32
-FINBERT_MAX_LENGTH = 256
+
+# Overridable from the environment so a memory-constrained container can be
+# tuned without a rebuild. Batch size is the main lever on peak RSS: on a
+# small Railway instance 32 is enough to get the process OOM-killed mid-scan.
+FINBERT_BATCH_SIZE = int(os.getenv("FINBERT_BATCH_SIZE", "32"))
+FINBERT_MAX_LENGTH = int(os.getenv("FINBERT_MAX_LENGTH", "256"))
+
+# Cap the work a single API request can trigger. Scoring every uncached
+# article (246 on a cold cache) in one request is what pushed the container
+# over its memory limit; the dashboard only ever displays the newest few.
+FINBERT_MAX_ARTICLES_PER_REQUEST = int(
+    os.getenv("FINBERT_MAX_ARTICLES_PER_REQUEST", "60")
+)
+
+# Torch spawns one intra-op thread per core and each carries its own
+# workspace. On a 1-2 core container that is pure overhead.
+TORCH_NUM_THREADS = int(os.getenv("TORCH_NUM_THREADS", "1"))
 
 SENTIMENT_CACHE_PATH = INTERIM / "sentiment_cache.parquet"
 

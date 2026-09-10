@@ -41,8 +41,20 @@ def _load_model():
 
     _DEVICE = _get_device()
     print(f"  loading {config.FINBERT_MODEL} on {_DEVICE} ...")
+
+    if _DEVICE == "cpu":
+        # One intra-op thread. Each extra thread carries its own workspace,
+        # which is wasted memory on a 1-2 core container.
+        torch.set_num_threads(config.TORCH_NUM_THREADS)
+
     _TOKENIZER = AutoTokenizer.from_pretrained(config.FINBERT_MODEL)
-    _MODEL = AutoModelForSequenceClassification.from_pretrained(config.FINBERT_MODEL)
+    _MODEL = AutoModelForSequenceClassification.from_pretrained(
+        config.FINBERT_MODEL,
+        # Materialise weights straight into their final tensors. The default
+        # builds a randomly-initialised model first and then loads the
+        # checkpoint over it, so peak memory is ~2x the model.
+        low_cpu_mem_usage=True,
+    )
     _MODEL.to(_DEVICE)
     _MODEL.eval()
     print(f"  labels: {_MODEL.config.id2label}")
@@ -84,12 +96,15 @@ def score_texts(texts: list) -> pd.DataFrame:
             max_length=config.FINBERT_MAX_LENGTH, return_tensors="pt",
         ).to(device)
 
-        with torch.no_grad():
+        with torch.inference_mode():
             logits = model(**enc).logits
             probs = torch.softmax(logits, dim=-1).cpu().numpy()
 
         batch_idx = order[start:start + bs]
         all_probs[batch_idx] = probs
+
+        # Release the batch's activations before allocating the next one.
+        del enc, logits
 
     cols = [id2label[i] for i in range(len(id2label))]
     out = pd.DataFrame(all_probs, columns=cols)
@@ -119,6 +134,19 @@ def update_cache(news_df: pd.DataFrame) -> pd.DataFrame:
     if todo.empty:
         print("  nothing new to score, cache already covers all articles")
         return cache
+
+    # Newest first, then cap. A cold cache can hold hundreds of unscored
+    # articles, and scoring them all in one request is what OOM-killed the
+    # API container. The dashboard only surfaces the newest handful, and the
+    # remainder get picked up by later calls as the cache warms.
+    limit = config.FINBERT_MAX_ARTICLES_PER_REQUEST
+    if "published_utc" in todo.columns:
+        todo = todo.sort_values("published_utc", ascending=False)
+    skipped = max(0, len(todo) - limit)
+    if skipped:
+        print(f"  capping this run at {limit:,} newest articles "
+              f"({skipped:,} deferred to a later call)")
+        todo = todo.head(limit)
 
     print(f"  scoring {len(todo):,} new articles "
           f"({len(already):,} already cached)")
