@@ -80,9 +80,18 @@ While the first build is running (it takes 5–8 minutes — torch is large):
 
 **2c. Get your backend URL**
 
-1. Click **Settings** → **Networking** → **Generate Domain**
+1. Click **Settings** → **Networking** → **Public Networking** → **Generate Domain**
 2. Railway gives you a URL like `https://market-sentiment-production.up.railway.app`
 3. Copy it — you need it in Step 3
+
+> **Use the port Railway asks for, not 8000.** Railway injects its own `$PORT`
+> (usually 8080) and the container binds to that. If you point the domain at
+> 8000 you get `502 Application failed to respond` — routing works, but nothing
+> is listening. Check the deploy log for the `Uvicorn running on http://0.0.0.0:PORT`
+> line and match it.
+>
+> Also ignore the **Private Networking** entry (`*.railway.internal`). That only
+> resolves between services inside Railway — a browser can never reach it.
 
 **2d. Verify the backend is live**
 
@@ -98,6 +107,11 @@ You should see:
 > **If the health check fails:** check the **Deploy Logs** tab in Railway.
 > The most common issue is a missing API key — the build succeeds but the
 > server errors on first request.
+>
+> **`/health` passing does not mean `/predict` works.** The XGBoost model and
+> SHAP explainer load at startup, but FinBERT is only touched on the first real
+> prediction. Always test `/predict/AAPL` too — and expect it to be slow the
+> first time, since it downloads FinBERT (~400MB) from HuggingFace.
 
 ---
 

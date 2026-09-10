@@ -42,6 +42,8 @@ COPY models/ ./models/
 
 COPY data/raw/live/ ./data/raw/live/
 
-ENV PORT=8000
-
-CMD ["sh", "-c", "uvicorn api.main:app --host 0.0.0.0 --port $PORT --workers 1 --timeout-keep-alive 120"]
+# No ENV PORT here on purpose. Railway injects its own $PORT and overrides
+# anything set at build time, so hardcoding one only creates a misleading
+# value to point a domain at. ${PORT:-8000} keeps `docker run` working
+# locally while always deferring to the platform in production.
+CMD ["sh", "-c", "uvicorn api.main:app --host 0.0.0.0 --port ${PORT:-8000} --workers 1 --timeout-keep-alive 120"]

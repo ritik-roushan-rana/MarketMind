@@ -2,6 +2,18 @@
 // Locally it falls back to localhost:8000 so nothing breaks during dev.
 const API_BASE = import.meta.env.VITE_API_BASE ?? 'http://localhost:8000';
 
+// Vite inlines env vars at BUILD time, so a production bundle missing
+// VITE_API_BASE ships the localhost fallback and every visitor's browser
+// tries to reach a backend on their own machine. Fail loudly in the console
+// instead of leaving that to be diagnosed from a generic "cannot reach API".
+if (import.meta.env.PROD && !import.meta.env.VITE_API_BASE) {
+  console.error(
+    '[config] VITE_API_BASE is not set — this build will call ' +
+    `${API_BASE}, which is not reachable from a visitor's browser. ` +
+    'Set it in the Vercel dashboard and REDEPLOY (a rebuild is required).'
+  );
+}
+
 async function request(path, timeoutMs = 60_000) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);

@@ -1,8 +1,3 @@
-// Kept for reference by other modules that import it.
-// The actual runtime value used for fetch() lives in api.js and reads
-// from import.meta.env.VITE_API_BASE (set in Vercel dashboard).
-export const API_BASE = 'http://localhost:8000';
-
 export const TICKERS = [
   'AAPL','MSFT','NVDA','AMZN','GOOGL','META','TSLA',
   'JPM','GS','BAC','MS','XOM','JNJ','WMT','CAT',
