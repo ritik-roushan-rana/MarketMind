@@ -53,7 +53,7 @@ export default function Header({ activeTicker, onSelect, usingCache }) {
               <span className="font-headline-sm text-headline-sm text-on-surface tracking-tight font-semibold leading-tight">
                 Market Sentiment Dashboard
               </span>
-              <span className="font-label-mono text-label-mono text-outline">BNP Paribas Hackathon</span>
+              <span className="font-label-mono text-label-mono text-outline">Hackathon</span>
             </div>
           </div>
           <div className="hidden md:flex items-center gap-space-xs px-space-sm py-space-2xs bg-surface-container rounded border border-outline-variant/40">
